@@ -1,9 +1,14 @@
 const express = require('express');
 const Model = require('../models/Bookingmodel');
+const verifyToken = require('../middlewares/verifytoken');
 
 const router = express.Router();
 
-router.get('/add', (req, res) => {
+
+
+
+router.post('/add', verifyToken, (req, res) => {
+    req.body.user = req.user._id;
     console.log(req.body);
     new Model(req.body).save()
         .then((result) => {
@@ -30,7 +35,8 @@ router.post('/create', (req, res) => {
         });
 });
 router.get('/getall', (req, res) => {
-    Model.find()
+    Model.find().populate('user').populate('space')
+   
         .then((result) => {
             res.status(200).json(result);
 
@@ -43,9 +49,9 @@ router.get('/getall', (req, res) => {
 
 });
 //: denotes url parameters
-router.get('/getbycity/:city', (req, res) => {
-    console.log(req.params.city);
-    Model.find({ city: req.params.city })
+router.get('/getbyuser/:user', (req, res) => {
+    console.log(req.params.id);
+    Model.find({ user: req.params.user })
         .then((result) => {
             res.status(200).json(result);
 
@@ -56,8 +62,8 @@ router.get('/getbycity/:city', (req, res) => {
 
         });
 
-
 });
+
 router.get('/getbyemail/:email', (req, res) => {
     Model.findOne({ email: req.params.email })
         .then((result) => {
@@ -116,5 +122,6 @@ router.put('/update/:id', (req, res) => {
 
 
 });
+
 
 module.exports = router;

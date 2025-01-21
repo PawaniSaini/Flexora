@@ -7,7 +7,7 @@ const mySchema = new Schema({
     endDate: { type: Date },
     status: { type: String, default: 'booked' },
     amount: Number,
-    paymentMethod: String,
+    paymentDetails: Object,
     createdAt: { type: Date, dafault: Date.now }
 });
 

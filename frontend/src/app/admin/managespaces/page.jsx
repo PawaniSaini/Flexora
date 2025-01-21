@@ -71,7 +71,7 @@ const ManageSpace = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-                  onClick={() => window.location.href = `/admin/editspaces/${space._id}`} // Redirect to edit page
+                  onClick={() => window.location.href = `/admin/update-space/${space._id}`} // Redirect to edit page
                 >
                   Edit
                 </motion.button>

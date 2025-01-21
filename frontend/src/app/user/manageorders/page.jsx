@@ -2,6 +2,7 @@
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 const ManageOrders = () => {
   const runOnce = useRef(false);
@@ -10,77 +11,88 @@ const ManageOrders = () => {
   // Fetch Orders from API
   const fetchOrders = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/orders/getall');
+      const res = await axios.get('http://localhost:5000/booking/getall');
+      console.log(res.data);
+      
       setOrderList(res.data);
-    } catch (error) {
-      toast.error('Failed to fetch orders');
+    } catch (err) {
+      toast.error('Failed to fetch booking');
+      console.error(err);
     }
+  };
+
+  // Delete Order
+  const deleteOrder = (id) => {
+    axios.delete(`http://localhost:5000/booking/delete/${id}`)
+      .then(() => {
+        toast.success('Booking deleted successfully');
+        fetchOrders(); // Refetch orders after deletion
+      })
+      .catch((err) => {
+        toast.error('Failed to delete booking');
+        console.error(err);
+      });
   };
 
   useEffect(() => {
     if (!runOnce.current) {
       fetchOrders();
-      runOnce.current = true; // Ensure it only runs once
+      runOnce.current = true;
     }
   }, []);
 
   // Display Orders Table
-  const displayOrders = () => {
-    return (
-      <div className='bg-white'>
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
-        <thead className="bg-gray-50 dark:bg-neutral-800">
-          <tr>
-            <th className="px-6 py-3 text-start">ID</th>
-            <th className="px-6 py-3 text-start">Workspace</th>
-            <th className="px-6 py-3 text-start">Location</th>
-            <th className="px-6 py-3 text-start">Date</th>
-            <th className="px-6 py-3 text-start">Status</th>
-            <th className="px-6 py-3 text-start">Image</th>
+  const displayOrders = () => (
+    <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
+      <thead className="bg-gray-50 dark:bg-neutral-800">
+        <tr>
+          <th className="px-6 py-3 text-start">Order ID</th>
+          <th className="px-6 py-3 text-start">User Name</th>
+          <th className="px-6 py-3 text-start">Space Name</th>
+          <th className="px-6 py-3 text-start">Start Date</th>
+          <th className="px-6 py-3 text-start">End Date</th>
+          <th className="px-6 py-3 text-start">Amount</th>
+          <th className="px-6 py-3 text-end" colSpan={2}>Actions</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
+        {orderList.map((order) => (
+          <tr key={order._id}>
+            <td className="px-6 py-3">{order._id}</td>
+            <td className="px-6 py-3">{order.user.name}</td>
+            <td className="px-6 py-3">{order.space.title}</td>
+            <td className="px-6 py-3">{new Date(order.startDate).toLocaleDateString()}</td>
+            <td className="px-6 py-3">{new Date(order.endDate).toLocaleDateString()}</td>
+            <td className="px-6 py-3">${order.amount}</td>
+            <td className="px-6 py-1.5">
+              <Link
+                href={`/admin/update-order/${order._id}`}
+                className="inline-flex items-center gap-x-1 text-sm text-blue-600 hover:underline font-medium"
+              >
+                Edit
+              </Link>
+            </td>
+            <td className="px-6 py-1.5">
+              <button
+                onClick={() => deleteOrder(order._id)}
+                className="text-sm text-white font-medium bg-red-600 rounded-lg px-3 py-1"
+              >
+                Delete
+              </button>
+            </td>
           </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
-          {orderList.map((order) => (
-            <tr key={order._id}>
-              <td className="px-6 py-3">{order._id}</td>
-              <td className="px-6 py-3">{order.workspace}</td>
-              <td className="px-6 py-3">{order.location}</td>
-              <td className="px-6 py-3">{new Date(order.date).toLocaleDateString()}</td>
-              <td className="px-6 py-3">
-                <span
-                  className={`inline-block px-2 py-1 text-sm font-medium rounded-full ${
-                    order.status === 'Confirmed'
-                      ? 'bg-green-100 text-green-800'
-                      : order.status === 'Pending'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {order.status}
-                </span>
-              </td>
-              <td className="px-6 py-3">
-                <img
-                  src={order.image}
-                  alt={order.workspace}
-                  className="w-16 h-16 object-cover rounded"
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </div>
-    );
-  };
+        ))}
+      </tbody>
+    </table>
+  );
 
   return (
-    <div className="max-w-[80%]  mx-auto">
+    <div className="max-w-[80%] mx-auto">
       <h1 className="text-center font-bold text-3xl mb-6">Manage Orders</h1>
       {orderList.length > 0 ? (
         displayOrders()
       ) : (
-        <p className="text-center">No orders available</p>
+        <p className="text-center text-lg font-medium">No orders found.</p>
       )}
     </div>
   );

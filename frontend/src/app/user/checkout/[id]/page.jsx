@@ -1,166 +1,230 @@
 'use client';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import React, { useEffect, useRef, useState } from 'react';
-import toast from 'react-hot-toast';
 import Navbar from '@/components/Navbar';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import toast from 'react-hot-toast';
+import axios from 'axios';
 import { motion } from 'framer-motion';
 
-const BookingCheckout = () => {
+const CheckoutPage = () => {
   const { id } = useParams();
   const [space, setSpace] = useState(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [totalPrice, setTotalPrice] = useState(0);
-  const [token, setToken] = useState(null);
+  const [userId, setUserId] = useState('');
+  const [days, setDays] = useState(0);
+  const token = localStorage.getItem('token');
+  // console.log(token);
+
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    setToken(savedToken);
+    // Fetch user ID from localStorage
+    // const userId = localStorage.getItem('userId');
+    // setUserId(userId);
 
-    // Fetch space details by ID
+    // Fetch space details
     if (id) {
-      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/space/getbyid/${id}`)
-        .then((response) => {
-          console.log(response.data);
-
-          setSpace(response.data);
-        }).catch((err) => {
-          console.log(err);
-          toast.error('Failed to load space details');
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/space/getbyid/${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setSpace(data);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error('Failed to load space details.');
         });
     }
   }, [id]);
 
-  const handleBooking = async () => {
-    if (!startDate || !endDate) {
-      toast.error('Please select both start and end dates.');
-      return;
-    }
+  // Formik form handling
+  const formik = useFormik({
+    initialValues: {
+      space: id || '',
+      startDate: '',
+      endDate: '',
+      amount: 0,
+    },
+    validationSchema: Yup.object({
+      startDate: Yup.date().required('Start date is required'),
+      endDate: Yup.date()
+        .required('End date is required')
+        .test('is-after-start', 'End date must be after start date', function (value) {
+          const { startDate } = this.parent;
+          return new Date(value) > new Date(startDate);
+        }),
+    }),
+    onSubmit: (values) => confirmBooking(values),
+  });
 
-    // Calculate total price (example calculation: price per day multiplied by number of days)
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+  // Calculate total days and update the amount
+  useEffect(() => {
+    const start = new Date(formik.values.startDate);
+    const end = new Date(formik.values.endDate);
     const days = (end - start) / (1000 * 60 * 60 * 24);
+    if (days && space !== null) {
+      setDays(days);
+      formik.setFieldValue('amount', days * space.price);
+    }
+  }, [formik.values.startDate, formik.values.endDate]);
 
+  const confirmBooking = async (values) => {
     if (days <= 0) {
-      toast.error('End date must be after start date.');
+      toast.error('End date must be after the start date.');
       return;
     }
 
-    const total = days * space.price;
-    setTotalPrice(total);
+    const bookingData = {
+      ...values
+    };
 
-    // Proceed to booking (this could be a POST request to your backend)
+    console.log(bookingData);
+
+
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/booking/create`, {
-        spaceId: id,
-        startDate,
-        endDate,
-      }, {
-        headers: { 'x-auth-token': token }
-      });
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/booking/add`,
+        bookingData,
+        {
+          headers: {
+            'x-auth-token': token
+          },
+        }
+      );
 
-      toast.success('Booking successful! Total price: $' + total);
+      if (response.status === 200 || response.status === 201) {
+        toast.success('Booking created successfully!');
+        formik.resetForm();
+      } else {
+        throw new Error('Failed to create booking');
+      }
     } catch (error) {
-      console.error('Error during booking:', error);
-      toast.error('Failed to complete booking.');
+      console.error(error);
+      toast.error('Error creating booking.');
     }
   };
 
   if (!space) {
-    return <>
-
-      <div className="bg-gray-900 min-h-screen py-10 px-6 font-sans loading">
-        <div className="container mx-auto w-full shadow-lg p-8 bg-gray-800 text-white flex flex-col md:flex-row gap-8">
-          <div className="w-full md:w-1/2 space-y-6 animate-pulse">
-            <div className="h-10 bg-gray-200 rounded mb-4" />
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-1" />
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-1" />
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-1" />
-            <div className="h-4 bg-gray-200 rounded w-full" />
-          </div>
-          <div className="w-full md:w-1/2 space-y-6 animate-pulse">
-            <div className="h-10 bg-gray-200 rounded mb-4" />
-            <div className="h-10 bg-gray-200 rounded w-full mb-1" />
-            <div className="h-10 bg-gray-200 rounded w-full mb-1" />
-          </div>
-        </div>
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex justify-center items-center">
+        Loading...
       </div>
-      ``` For this basic example, I determined the height (h-10, h-4) and width
-      (w-full, w-1/2) of the loading skeleton based on the layout you provided in
-      the JSX of your react component, but you may need to adjust these values based
-      on your actual styling. The `animate-pulse` class provides the loading
-      animation. Each `div` represents a line of text or a UI element that would
-      otherwise be in the component.
-    </>
-
+    );
   }
 
   return (
-    <div className="bg-gray-900 min-h-screen py-10 px-6 font-sans">
+    <div className="bg-gray-900 min-h-screen text-white">
       <Navbar />
-      <div className="container mx-auto w-full shadow-lg p-8 bg-gray-800 text-white flex flex-col md:flex-row gap-8">
-        <motion.div
-          className="w-full md:w-1/2 space-y-6"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          {/* Space Details */}
-          <h1 className="text-3xl font-bold">{space.title}</h1>
-          <p className="text-lg text-gray-300">
-            <span className="font-semibold">Price:</span> ${space.price} / day
-          </p>
-          <p className="text-lg text-gray-300">
-            <span className="font-semibold">Area:</span> {space.area} sq ft
-          </p>
-          <p className="text-lg text-gray-300">
-            <span className="font-semibold">Location:</span> {space.address}
-          </p>
-          <p className="text-lg text-gray-300">
-            <span className="font-semibold">Description:</span> {space.description || 'No description available.'}
-          </p>
-        </motion.div>
+      <div className="container mx-auto py-10 px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-gray-800 p-8 rounded-lg shadow-lg">
+          {/* Space Details Section */}
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <img
+              src={space.image}
+              alt={space.title}
+              className="w-full h-64 object-cover rounded-lg shadow-md"
+            />
+            <h1 className="text-3xl font-bold">{space.title}</h1>
+            <p className="text-lg">
+              <span className="font-semibold">Price:</span> ${space.price} / day
+            </p>
+            <p className="text-lg">
+              <span className="font-semibold">Location:</span> {space.address}
+            </p>
+          </motion.div>
 
-        {/* Booking Section */}
-        <motion.div
-          className="w-full md:w-1/2 space-y-6"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <h2 className="text-2xl font-semibold mb-4">Book Your Space</h2>
-          <div className="space-y-4">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-            <motion.button
-              className="mt-2 w-full bg-indigo-600 text-white font-semibold text-lg px-4 py-2 rounded-lg hover:bg-indigo-700 transition-all duration-300"
-              onClick={handleBooking}
-              whileTap={{ scale: 0.95 }}
-            >
-              Book Now
-            </motion.button>
-          </div>
-          {totalPrice > 0 && (
-            <div className="text-lg text-gray-300 mt-4">
-              <p>Total Price: <span className="font-bold">${totalPrice}</span></p>
-            </div>
-          )}
-        </motion.div>
+          {/* Booking Form Section */}
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-2xl font-semibold">Booking Details</h2>
+            <form onSubmit={formik.handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="space" className="block font-semibold mb-2">
+                  Space ID
+                </label>
+                <input
+                  type="text"
+                  id="space"
+                  value={formik.values.space}
+                  readOnly
+                  className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600"
+                />
+              </div>
+              <div>
+                <label htmlFor="startDate" className="block font-semibold mb-2">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  id="startDate"
+                  name="startDate"
+                  value={formik.values.startDate}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className={`w-full p-3 rounded-lg bg-gray-700 text-white border ${formik.touched.startDate && formik.errors.startDate
+                    ? 'border-red-600'
+                    : 'border-gray-600'
+                    }`}
+                />
+                {formik.touched.startDate && formik.errors.startDate && (
+                  <p className="text-red-500 text-sm">{formik.errors.startDate}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="endDate" className="block font-semibold mb-2">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  id="endDate"
+                  name="endDate"
+                  value={formik.values.endDate}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className={`w-full p-3 rounded-lg bg-gray-700 text-white border ${formik.touched.endDate && formik.errors.endDate
+                    ? 'border-red-600'
+                    : 'border-gray-600'
+                    }`}
+                />
+                {formik.touched.endDate && formik.errors.endDate && (
+                  <p className="text-red-500 text-sm">{formik.errors.endDate}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="amount" className="block font-semibold mb-2">
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  id="amount"
+                  onChange={formik.handleChange}
+                  value={formik.values.amount}
+                  readOnly
+                  className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-green-600 hover:bg-green-700 text-lg font-semibold py-2 px-4 mt-4 rounded-lg transition-all"
+
+              >
+                Confirm Booking
+              </button>
+            </form>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default BookingCheckout;
+export default CheckoutPage;
+

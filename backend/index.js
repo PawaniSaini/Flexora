@@ -22,7 +22,7 @@ app.use('/space', SpaceRouter);
 app.use('/booking', BookingRouter);
 app.use('/review', ReviewRouter);
 app.use('/admin', AdminRouter);
-app.use('/util', utilRouter);
+app.use('/utils', utilRouter);
 
 app.use(express.static('./static/uploads'));
 

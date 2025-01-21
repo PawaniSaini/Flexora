@@ -1,5 +1,6 @@
 'use client';
-import React from 'react';
+
+import React, { useState } from 'react';
 import { motion } from 'framer-motion'; // For animations
 import { useFormik } from 'formik';
 import { useRouter } from 'next/navigation';
@@ -8,13 +9,14 @@ import toast from 'react-hot-toast';
 import * as Yup from 'yup'; // For form validation
 
 // Validation schema using Yup
-const LoginSchema = Yup.object().shape({
-  email: Yup.string().email('Invalid email').required('Required'),
-  password: Yup.string().required('Required'),
+const AdminLoginSchema = Yup.object().shape({
+  email: Yup.string().email('Invalid email').required('Email is required'),
+  password: Yup.string().required('Password is required'),
 });
 
-const Login = () => {
+const AdminLogin = () => {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   // Formik for handling the form
   const loginForm = useFormik({
@@ -22,122 +24,130 @@ const Login = () => {
       email: '',
       password: '',
     },
-    validationSchema: LoginSchema,
-    onSubmit: (values, { setSubmitting }) => {
-      setSubmitting(true); // Disable form while submitting
-      axios.post('http://localhost:5000/user/authenticate', values)
-        .then((response) => {
-          toast.success('Login successful');
-          localStorage.setItem('token', response.data.token);
-          localStorage.setItem('user', JSON.stringify(response.data));
-
-          const { role } = response.data;
-          if (role === 'admin') {
-            router.push('/addspace'); // Change route if needed
-          } else {
-            router.push('/');
-          }
-        })
-        .catch((err) => {
-          toast.error(err.response?.data?.message || 'Login failed');
-        })
-        .finally(() => {
-          setSubmitting(false); // Re-enable form after submission
+    validationSchema: AdminLoginSchema,
+    onSubmit: async (values) => {
+      setIsLoading(true);
+      try {
+        // Fetch admin details using GET request
+        const response = await axios.get('http://localhost:5000/admin/authenticate', {
+          params: {
+            email: values.email,
+            password: values.password,
+          },
         });
+
+        if (response.data.success) {
+          toast.success('Login successful');
+          localStorage.setItem('adminToken', response.data.token);
+          localStorage.setItem('adminData', JSON.stringify(response.data.admin));
+
+          // Redirect to admin dashboard
+          router.push('/admin/dashboard');
+        } else {
+          toast.error(response.data.message || 'Invalid credentials');
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error('An error occurred while logging in');
+      } finally {
+        setIsLoading(false);
+      }
     },
   });
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-300 via-blue-300 to-pink-300">
-      {/* Animated background */}
-      <motion.div
-        className="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-400 to-blue-400"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2 }}
-      />
-
-      {/* Login Card */}
-      <motion.div
-        className="relative z-10 bg-white p-10 rounded-lg shadow-2xl max-w-md w-full"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
-      >
-        <h2 className="text-3xl font-bold text-center text-gray-700 mb-6">
-          Admin Login
-        </h2>
-        
-        <form onSubmit={loginForm.handleSubmit}>
-          {/* Email Input */}
-          <div className="mb-6">
-            <label
-              htmlFor="email"
-              className="block text-gray-600 mb-2"
-            >
-              Email Address
-            </label>
-            <motion.input
-              type="email"
-              id="email"
-              name="email"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={loginForm.values.email}
-              onChange={loginForm.handleChange}
-              onBlur={loginForm.handleBlur}
-              whileFocus={{ borderColor: '#3b82f6' }}
-            />
-            {loginForm.errors.email && loginForm.touched.email && (
-              <div className="text-red-500 text-sm">{loginForm.errors.email}</div>
-            )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="flex w-full max-w-4xl rounded-lg bg-white shadow-2xl">
+        {/* Left Form Section */}
+        <motion.div
+          className="w-1/2 p-10 rounded-lg flex flex-col justify-center space-y-5"
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.8, ease: 'easeInOut' }}
+        >
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-gray-700">Admin Login</h2>
+            <p className="text-gray-500">Log in to manage Flexora's workspaces</p>
           </div>
 
-          {/* Password Input */}
-          <div className="mb-6">
-            <label
-              htmlFor="password"
-              className="block text-black mb-2"
+          {/* Formik form */}
+          <form onSubmit={loginForm.handleSubmit} className="space-y-4">
+            <div className="relative w-full">
+              <input
+                type="email"
+                id="email"
+                name="email"
+                className="peer block w-full rounded-lg border border-gray-300 bg-transparent px-2.5 pb-2.5 pt-4 text-sm text-gray-900 focus:border-blue-600 focus:outline-none"
+                placeholder=" "
+                value={loginForm.values.email}
+                onChange={loginForm.handleChange}
+                onBlur={loginForm.handleBlur}
+              />
+              <label
+                htmlFor="email"
+                className="absolute top-2 left-1 z-10 -translate-y-4 scale-75 transform select-none bg-white px-2 text-sm text-gray-500 duration-300 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2 peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:text-blue-600"
+              >
+                Enter Your Email
+              </label>
+              {loginForm.errors.email && loginForm.touched.email && (
+                <div className="text-red-500 text-sm">{loginForm.errors.email}</div>
+              )}
+            </div>
+
+            <div className="relative w-full">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                className="peer block w-full rounded-lg border border-gray-300 bg-transparent px-2.5 pb-2.5 pt-4 text-sm text-gray-900 focus:border-blue-600 focus:outline-none"
+                placeholder=" "
+                value={loginForm.values.password}
+                onChange={loginForm.handleChange}
+                onBlur={loginForm.handleBlur}
+              />
+              <label
+                htmlFor="password"
+                className="absolute top-2 left-1 z-10 -translate-y-4 scale-75 transform select-none bg-white px-2 text-sm text-gray-500 duration-300 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2 peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:text-blue-600"
+              >
+                Enter Your Password
+              </label>
+              {loginForm.errors.password && loginForm.touched.password && (
+                <div className="text-red-500 text-sm">{loginForm.errors.password}</div>
+              )}
+            </div>
+
+            <motion.button
+              type="submit"
+              disabled={loginForm.isSubmitting || isLoading}
+              className="w-full rounded-lg bg-blue-400 py-3 font-bold text-white mt-5"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Password
-            </label>
-            <motion.input
-              type="password"
-              id="password"
-              name="password"
-              className="w-full px-4 py-2 border border-gray-300 text-black rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={loginForm.values.password}
-              onChange={loginForm.handleChange}
-              onBlur={loginForm.handleBlur}
-              whileFocus={{ borderColor: '#3b82f6' }}
-            />
-            {loginForm.errors.password && loginForm.touched.password && (
-              <div className="text-red-500 text-sm">{loginForm.errors.password}</div>
-            )}
-          </div>
+              {isLoading ? 'Logging in...' : 'Login'}
+            </motion.button>
+          </form>
+        </motion.div>
 
-          {/* Login Button with Animation */}
-          <motion.button
-            type="submit"
-            disabled={loginForm.isSubmitting}
-            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 focus:outline-none"
-            whileHover={{ rotate: [0, 10, -10, 0], scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.4, ease: 'easeInOut' }}
-          >
-            {loginForm.isSubmitting ? 'Logging in...' : 'Login'}
-          </motion.button>
-        </form>
-
-        {/* Additional links */}
-        <p className="text-sm text-gray-500 text-center mt-4">
-          Don't have an account?{' '}
-          <a href="/admin/signup" className="text-blue-500 underline">
-            Sign Up
-          </a>
-        </p>
-      </motion.div>
+        {/* Right Content Section */}
+        <motion.div
+          className="w-1/2 p-10 bg-blue-300 text-white flex flex-col justify-center rounded-r-lg"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        >
+          <h1 className="text-4xl font-bold mb-5">Welcome Admin</h1>
+          <p className="text-lg">
+            Manage flexible office spaces, users, and bookings with ease.
+          </p>
+          <img
+            src="https://media.istockphoto.com/id/1901941398/photo/marketing-team-working-together-at-task-table.jpg?s=612x612&w=0&k=20&c=fcRg5Lit3TeCdkdCGdpqMTvh5os6uYJX3HVPkv1jptA="
+            alt="Admin Workspace"
+            className="mt-10 w-full h-auto rounded-lg"
+          />
+        </motion.div>
+      </div>
     </div>
   );
 };
 
-export default Login;
+export default AdminLogin;

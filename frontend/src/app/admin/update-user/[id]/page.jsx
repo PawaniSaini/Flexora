@@ -14,6 +14,8 @@ const UpdateUser = () => {
   const getUserData = async () => {
     try {
       const res = await axios.get(`http://localhost:5000/user/getbyid/${id}`);
+      // console.log(res.data);
+      
       setUserData(res.data);
     } catch (error) {
       console.error('Error fetching user data:', error);

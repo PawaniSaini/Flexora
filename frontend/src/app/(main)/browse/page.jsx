@@ -1,45 +1,57 @@
 'use client';
-import axios from 'axios';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Disclosure } from '@headlessui/react';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid';
+import axios from 'axios';
 import Link from 'next/link';
-import { EllipsisVerticalIcon } from '@heroicons/react/24/outline'; // For 3 dots icon
 import Navbar from '@/components/Navbar';
-
-
-const categories = ['Facilities', 'Price', 'Area', 'Location'];
+import Footer from '@/components/Footers';
 
 const BrowseSpaces = () => {
-  const runOnce = useRef(false);
   const [spaceList, setSpaceList] = useState([]);
   const [masterList, setMasterList] = useState([]);
   const [facilityFilter, setFacilityFilter] = useState([]);
   const [priceRange, setPriceRange] = useState([0, 10000]);
   const [areaRange, setAreaRange] = useState([0, 5000]);
   const [locationFilter, setLocationFilter] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar state
 
-  // Fetch office spaces data from the backend API
-  const fetchSpaces = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/space/getall');
-      setSpaceList(res.data);
-      setMasterList(res.data);
-    } catch (error) {
-      console.error('Error fetching spaces:', error);
-    }
-  };
+  const facilitiesOptions = [
+    'WiFi',
+    'Parking',
+    'Conference Room',
+    'Cafeteria',
+    'Reception',
+    'Air Conditioning',
+    'Power Backup',
+  ];
 
-  // Fetch spaces only once when component mounts
+  const locationOptions = [
+    'Delhi',
+    'Mumbai',
+    'Bangalore',
+    'Hyderabad',
+    'Chennai',
+    'Pune',
+    'Kolkata',
+    'Ahmedabad',
+    'Jaipur',
+    'Lucknow',
+  ];
+
   useEffect(() => {
-    if (!runOnce.current) {
-      fetchSpaces();
-      runOnce.current = true;
-    }
+    const fetchSpaces = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/space/getall');
+        setSpaceList(response.data);
+        setMasterList(response.data);
+      } catch (error) {
+        console.error('Error fetching spaces:', error);
+      }
+    };
+
+    fetchSpaces();
   }, []);
 
-  // Handle search by space title
   const searchSpace = (e) => {
     const keyword = e.target.value.toLowerCase();
     setSpaceList(
@@ -49,7 +61,6 @@ const BrowseSpaces = () => {
     );
   };
 
-  // Filter by facilities
   const handleFacilityChange = (facility) => {
     const updatedFilters = facilityFilter.includes(facility)
       ? facilityFilter.filter((f) => f !== facility)
@@ -63,7 +74,6 @@ const BrowseSpaces = () => {
     );
   };
 
-  // Filter by price range
   const filterByPrice = () => {
     setSpaceList(
       masterList.filter(
@@ -72,7 +82,6 @@ const BrowseSpaces = () => {
     );
   };
 
-  // Filter by area range
   const filterByArea = () => {
     setSpaceList(
       masterList.filter(
@@ -81,7 +90,6 @@ const BrowseSpaces = () => {
     );
   };
 
-  // Filter by location
   const filterByLocation = (e) => {
     const keyword = e.target.value.toLowerCase();
     setLocationFilter(keyword);
@@ -93,31 +101,19 @@ const BrowseSpaces = () => {
     );
   };
 
-  // Toggle sidebar visibility
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
   return (
-   
-    <div className="min-h-screen bg-gray-100 flex">
-     {/* Toggle Button for Sidebar */}
-      <div className="absolute top-4 left-4 z-10">
-        <button onClick={toggleSidebar} className="text-gray-700">
-          <EllipsisVerticalIcon className="w-8 h-8" />
-        </button>
-      </div>
-
-      {/* Sidebar Filters */}
-      {isSidebarOpen && (
-        <div className="w-1/4 bg-black text-white shadow-lg p-6 sticky top-0 h-screen">
+    <div className="min-h-screen bg-gray-900 text-gray-100">
+      <Navbar />
+      <div className="flex">
+        {/* Sidebar Filters */}
+        <div className="w-1/4 bg-gray-800 shadow-lg p-6 sticky top-0 h-screen">
           <h2 className="text-2xl font-bold mb-6">Filter Spaces</h2>
 
           {/* Search */}
           <input
             onChange={searchSpace}
             type="search"
-            className="w-full p-2 mb-6 border rounded-md bg-gray-200 text-black"
+            className="w-full p-2 mb-6 border rounded-md bg-gray-700 text-gray-100"
             placeholder="Search spaces..."
           />
 
@@ -134,7 +130,7 @@ const BrowseSpaces = () => {
                   )}
                 </Disclosure.Button>
                 <Disclosure.Panel className="pt-2 pb-4">
-                  {['WiFi', 'Parking', 'Conference Room'].map((facility) => (
+                  {facilitiesOptions.map((facility) => (
                     <label key={facility} className="block mb-2">
                       <input
                         type="checkbox"
@@ -155,7 +151,7 @@ const BrowseSpaces = () => {
             {({ open }) => (
               <>
                 <Disclosure.Button className="w-full flex justify-between items-center p-2 border-b">
-                  <span>Price Range</span>
+                  <span>Price Range (in Rs)</span>
                   {open ? (
                     <ChevronUpIcon className="w-5 h-5" />
                   ) : (
@@ -172,13 +168,13 @@ const BrowseSpaces = () => {
                     className="w-full"
                   />
                   <p className="mt-2">
-                    Price: ${priceRange[0]} - ${priceRange[1]}
+                    Price: Rs. {priceRange[0]} - Rs. {priceRange[1]}
                   </p>
                   <button
                     onClick={filterByPrice}
                     className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md"
                   >
-                    Filter Price
+                    Apply Filter
                   </button>
                 </Disclosure.Panel>
               </>
@@ -190,7 +186,7 @@ const BrowseSpaces = () => {
             {({ open }) => (
               <>
                 <Disclosure.Button className="w-full flex justify-between items-center p-2 border-b">
-                  <span>Area Range</span>
+                  <span>Area Range (in sq ft)</span>
                   {open ? (
                     <ChevronUpIcon className="w-5 h-5" />
                   ) : (
@@ -213,7 +209,7 @@ const BrowseSpaces = () => {
                     onClick={filterByArea}
                     className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md"
                   >
-                    Filter Area
+                    Apply Filter
                   </button>
                 </Disclosure.Panel>
               </>
@@ -233,56 +229,63 @@ const BrowseSpaces = () => {
                   )}
                 </Disclosure.Button>
                 <Disclosure.Panel className="pt-2 pb-4">
-                  <input
-                    type="text"
-                    value={locationFilter}
-                    onChange={filterByLocation}
-                    className="w-full p-2 border rounded-md bg-gray-200 text-black"
-                    placeholder="Enter location"
-                  />
+                  <select
+                    onChange={(e) => filterByLocation(e)}
+                    className="w-full p-2 border rounded-md bg-gray-700 text-gray-100"
+                  >
+                    <option value="">Select a location</option>
+                    {locationOptions.map((location) => (
+                      <option key={location} value={location.toLowerCase()}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
                 </Disclosure.Panel>
               </>
             )}
           </Disclosure>
         </div>
-      )}
-      {/* Spaces Display */}
-      <div className="flex-1 p-6">
- <Navbar/>
 
-        {spaceList.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {spaceList.map((space) => (
-              <div
-                key={space._id}
-                className="bg-white p-4 shadow-md rounded-lg flex flex-col items-center"
-              >
-                <img
-                  src={space.image}
-                  alt={space.title}
-                  className="h-40 w-full object-cover rounded-md mb-4"
-                />
-                <h3 className="font-bold text-xl text-blue-800 mb-2">
-                  {space.title}
-                </h3>
-                <p className="text-gray-700 mb-2">Price: Rs.{space.price}</p>
-                <p className="text-gray-700 mb-2">Area: {space.area} sq ft</p>
-                <p className="text-gray-700 mb-4">Location: {space.location}</p>
-                <Link href={`/spacedetails/${space._id}`}>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-md">
-                    View Details
-                  </button>
-                </Link>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p>No spaces available.</p>
-        )}
+        {/* Spaces Display */}
+        <div className="flex-1 p-6">
+          {spaceList.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {spaceList.map((space) => (
+                <div
+                  key={space._id}
+                  className="bg-gray-800 p-4 shadow-md rounded-lg flex flex-col items-center hover:shadow-xl transform hover:scale-105 transition-transform duration-300"
+                >
+                  <img
+                    src={space.image}
+                    alt={space.title}
+                    className="h-40 w-full object-cover rounded-md mb-4"
+                  />
+                  <h3 className="font-bold text-xl text-blue-400 mb-2">
+                    {space.title}
+                  </h3>
+                  <p className="text-gray-300 mb-2">Price: Rs. {space.price}</p>
+                  <p className="text-gray-300 mb-2">
+                    Area: {space.area} sq ft
+                  </p>
+                  <p className="text-gray-300 mb-4">
+                    Location: {space.location}
+                  </p>
+                  <Link href={`/spacedetails/${space._id}`}>
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded-md">
+                      View Details
+                    </button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-300">No spaces available.</p>
+          )}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };
 
 export default BrowseSpaces;
-

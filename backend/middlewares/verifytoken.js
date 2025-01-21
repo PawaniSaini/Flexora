@@ -3,7 +3,9 @@ const jwt = require('jsonwebtoken');
 
 const verifyToken = (req, res, next) => {
     const token = req.headers['x-auth-token'];
-
+    console.log(req.headers);
+    
+    if (!token) return res.status(403).json({ message: 'token not found' });
     jwt.verify(
         token,
         process.env.JWT_SECRET,

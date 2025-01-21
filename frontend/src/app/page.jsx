@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import Footer from '@/components/Footers';
 
 // Navbar with dropdown for Login as Admin/User
 const Navbar = () => {
@@ -233,6 +234,8 @@ const HomePage = () => {
       <HowItWorks />
       <FeaturesSection />
       <Testimonials />
+      
+      <Footer/>
     </div>
   );
 };
