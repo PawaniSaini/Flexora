@@ -13,7 +13,6 @@ const SpaceDetail = () => {
   const [token, setToken] = useState(null);
   const [rating, setRating] = useState(3);
   const [reviews, setReviews] = useState([]);
-  const [showAllReviews, setShowAllReviews] = useState(false);
   const messageRef = useRef();
   const router = useRouter();
 
@@ -54,20 +53,35 @@ const SpaceDetail = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen py-12 px-6">
+    <div className="bg-gray-50 min-h-screen">
       <Navbar />
-      
-      <div className="container mx-auto w-full shadow-lg rounded-lg p-8 bg-white flex flex-col md:flex-row gap-10">
+
+      {/* Banner Section */}
+      <div className="relative bg-yellow-300 text-white">
+        <img src={space.image} alt={space.title} className="w-full h-72 object-cover opacity-80" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <h1 className="text-4xl font-bold">Need a Place to Work?</h1>
+        </div>
+      </div>
+
+      {/* Details Section */}
+      <div className="container mx-auto px-6 py-12 flex flex-col md:flex-row gap-10">
+        {/* Image and Title */}
         <motion.div
-          className="w-full md:w-1/2"
+          className="w-full md:w-1/2 bg-white shadow-lg rounded-lg p-6"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <img src={space.image} alt={space.title} className="w-full h-72 object-cover rounded-lg shadow-md" />
-          <h1 className="text-3xl font-semibold mt-4">{space.title}</h1>
-          <p className="mt-2 text-lg text-gray-600">Price: ${space.price} / day</p>
+          <img src={space.image} alt={space.title} className="w-full h-64 object-cover rounded-lg" />
+          <h1 className="text-3xl font-bold mt-4 text-gray-800">{space.title}</h1>
+          <p className="text-lg text-gray-600 mt-2">Price: ${space.price} / day</p>
           <p className="text-lg text-gray-600">Location: {space.address}</p>
+          <ul className="mt-4 text-gray-600">
+            <li>✔ High-Speed WiFi</li>
+            <li>✔ Meeting Rooms</li>
+            <li>✔ Private Cabins</li>
+          </ul>
           <motion.button
             className="mt-6 bg-teal-500 text-white px-6 py-2 rounded-lg shadow hover:bg-teal-600"
             onClick={handleCheckout}
@@ -77,16 +91,18 @@ const SpaceDetail = () => {
           </motion.button>
         </motion.div>
 
+        {/* Description and Reviews */}
         <motion.div
           className="w-full md:w-1/2"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-semibold">Details</h2>
-          <p className="mt-4">{space.description}</p>
-          
-          <h3 className="mt-6 text-xl font-bold">Submit Your Review</h3>
+          <h2 className="text-2xl font-bold">Details</h2>
+          <p className="mt-4 text-gray-600">{space.description}</p>
+
+          {/* Submit Review */}
+          <h3 className="mt-8 text-xl font-bold">Submit Your Review</h3>
           <StarRatings
             rating={rating}
             changeRating={setRating}
@@ -94,9 +110,8 @@ const SpaceDetail = () => {
             starRatedColor="gold"
           />
           <textarea ref={messageRef} className="mt-4 w-full h-32 border rounded p-2" placeholder="Write your review..."></textarea>
-          
           <motion.button
-            className="mt-4 bg-teal-500 text-white px-6 py-2 rounded-lg shadow hover:bg-teal-600"
+            className="mt-4 bg-yellow-500 text-white px-6 py-2 rounded-lg shadow hover:bg-yellow-600"
             onClick={() => {
               if (messageRef.current.value) {
                 toast.success('Review Submitted!');
@@ -108,7 +123,8 @@ const SpaceDetail = () => {
           >
             Submit Review
           </motion.button>
-          
+
+          {/* Reviews */}
           <h3 className="mt-8 text-xl font-bold">Reviews</h3>
           <div className="mt-4">
             {reviews.length > 0 ? reviews.map((review, index) => (

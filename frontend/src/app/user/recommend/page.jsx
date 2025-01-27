@@ -1,4 +1,5 @@
-import React from 'react'
+'use client';
+import React, { useRef } from 'react'
 import {
     GoogleGenerativeAI, HarmCategory,
     HarmBlockThreshold
@@ -8,6 +9,8 @@ const genAI = new GoogleGenerativeAI(
 );
 
 const Recommend = () => {
+
+    const inputRef = useRef();
 
     const getResponseForGivenPrompt = async () => {
         try {
@@ -23,7 +26,6 @@ const Recommend = () => {
             ]);
             console.log(response);
             console.log(text);
-
         }
         catch (error) {
             console.log("Something Went Wrong");
@@ -52,7 +54,7 @@ const Recommend = () => {
         responseMimeType: "text/plain",
     };
 
-    const run = async ({ uri, mimeType }) => {
+    const run = async () => {
 
 
         // TODO Make these files available on the local file system
@@ -67,13 +69,7 @@ const Recommend = () => {
                 {
                     role: "user",
                     parts: [
-                        {
-                            fileData: {
-                                mimeType,
-                                fileUri: uri,
-                            },
-                        },
-                        { text: "prompt here" },
+                        { text: inputRef.current.value },
                     ],
                 },
             ],
@@ -81,13 +77,13 @@ const Recommend = () => {
 
         const result = await chatSession.sendMessage("INSERT_INPUT_HERE");
         console.log(result.response.text());
-        setMarkdownResponse(result.response.text());
+        // setMarkdownResponse(result.response.text());
     };
 
     return (
         <div>
-            <textarea></textarea>
-            <button>Suggest</button>
+            <textarea className='text-black' ref={inputRef}></textarea>
+            <button onClick={run}>Suggest</button>
         </div>
     )
 }
